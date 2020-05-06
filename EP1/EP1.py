@@ -1,152 +1,194 @@
-import nltk as nk
-import pandas as pd
+# # Exercício Programa 1 - PMR3201 (2020.1)
+# *Henrique Barros Oliveira, nUSP 11260512*
+# 
+# O objetivo desse EP é a analise de algumas obras literárias, a fim de determinar
+# quais são as palavras mais comuns ao longo de seu texto, apresentando esse resultado
+# em diversos gráficos para visualização.
+# 
+# As bibliotecas utilizadas são as abaixo:
+
+import nltk
+nltk.download('stopwords')
 import matplotlib.pyplot as plt
+import wordcloud as wd
+import pandas as pd
 
-# Funcao que recebe o endereco de um arquivo *.txt e a transforma em uma lista de non-stop words minusculas tokenizadas
-def preProcessaTexto(filepath): #FUNCIONA
-    assert filepath[-4:] == ".txt" # Checa se e um arquivo *.txt
+# ## Descrição do programa
+# 
+# ### Leitura e Pré-Processamento do Texto
+# 
+# Primeiramente, abrimos o texto em questão e realizamos um pré-processamento, deixando apenas
+# uma lista de palavras (excluindo *stop-words*) minúsculas.
 
-    # Abre o arquivo e le seu conteudo
+def preProcessa(filepath):
+    """
+    Essa funcao recebe a localizacao de um arquivo .txt correspondente a um dos textos dados
+    e o preprocessa, retornando uma lista das palavras (exceto stop-words) presentes nele
+    """
+
+    # Abre o arquivo dado e le seu conteudo
     f = open(filepath, 'r', encoding='utf8')
     raw = f.read()
+    f.close()
 
-    # Cria um tokenizer que mantem somente as palavras
-    tokenizer = nk.tokenize.RegexpTokenizer("[\w]+")
+    # Cria um tokenizer que mantem somente palavras do texto
+    tokenizer = nltk.tokenize.RegexpTokenizer('\w+')
     tokens = tokenizer.tokenize(raw)
 
-    # Transforma todas as palvras em minusculas
+    # Transforma todos os tokens em letras minusculas
     lwords = []
-    for palavra in tokens:
-        lwords.append(palavra.lower())
+    for word in tokens:
+        lwords.append(word.lower())
 
-    # Carrega as stopwords da lingua inglesa e gera uma lista sem nenhuma stopword
-    sw = nk.corpus.stopwords.words('english')
+    # Carrega os stopwords da lingua inglesa
+    sw = nltk.corpus.stopwords.words('english')
+
+    # Retira as stopwords da lista
     words_ns = []
     for word in lwords:
         if word not in sw:
             words_ns.append(word)
-
-    # A lista words_ns contem as non-stop words minusculas e e' retornada
+    
     return words_ns
 
-# Gera o dicionario de frequencias para um dado texto
-def geraFrequencias(filepath): #FUNCIONA
-    words_ns = preProcessaTexto(filepath)
-    # Inicializa o dicionario de frequencias
-    # Esse e' um dicionario de dicionarios, em que cada palavra e' representada dentro do subdicionario correspondente
-    # `a sua inicial por uma entrada palavra: n_ocorrencias
+# ### Geração do dicionário de frequências
+# 
+# Utilizando a lista obtida, geramos um dicionário <dicfreq> que contém pares
+# `(<x>, <n_ocorr>) = (palavra, número de ocorrências)`. Esse dicionário é da forma
+# ```
+# dicfreq = {a:{}, b:{}, c:{}, .... w:{}, x:{}, y:{}, z:{}}
+# ```
+# 
+# De forma que cada subdicionário contém apenas palavras com a mesma inicial.
+
+def geraFrequencias(words_ns):
+    """
+    Essa funcao recebe uma lista de palavras sem stopwords, words_ns, e contabiliza as palavras
+    de acordo com sua frequencia, retornando um dicionario contendo pares (palavra, numerro_ocorrencias)
+    """
+
+    # Inicializa o dicionario de frequencias, separando as palavras de acordo com sua letra inicial
     dicfreq = {'a':{}, 'b':{}, 'c':{}, 'd':{}, 'e':{}, 'f':{}, 'g':{}, 'h':{}, 'i':{}, 'j':{}, 'k':{}, 'l':{}, 'm':{}, 'n':{}, 'o':{}, 'p':{}, 'q':{}, 'r':{}, 's':{}, 't':{}, 'u':{}, 'v':{}, 'w':{}, 'x':{}, 'y':{}, 'z':{}}
 
+    # Percorre toda a lista words_ns, atualizando sua ocorrencia em dicfreq
     for x in words_ns:
-
-        #TODO consertar esses erros
-        if '_' in x: # Existem algumas ocorrencias da palavra _I_, contando como inicial _, logo retiramos isso para ficar so com o I
-            x = x.replace('_', "")
-        skip = False
-        for char in x: # Evita que pegue numeros como palavras separadas
-            skip = skip or char.isdigit()
-        if 'à' in x:
-            x = x.replace('à', 'a')
-        if 'é' in x:
-            x = x.replace('é', 'e')
-        if 'ç' in x:
-            x = x.replace('ç', 'c')
-        if 'á' in x:
-            x = x.replace('á', 'a')
-        if 'ê' in x:
-            x = x.replace('ê', 'e')
-        if 'â' in x:
-            x = x.replace('â', 'a')
-
-        if skip or x == '':
+        
+        # Alguns textos possuem palavras comecando por caracteres invalidos, 
+        # como letras com acento (das quais retiramos os acentos), numeros e caracteres
+        # '_', os quais também retiramos. 
+        if x[0] == '_':
+            x = x.replace('_', '')
+        if not x:
             continue
+        if x[0].isdigit():
+            continue
+        if x[0] == 'à':
+            x = x.replace('à', 'a')
+        if x[0] == 'â':
+            x = x.replace('â', 'a')
+        if x[0] == 'á':
+            x = x.replace('á', 'a')
+        if x[0] == 'é':
+            x = x.replace('é', 'e')
+        if x[0] == 'ê':
+            x = x.replace('ê', 'a')
+        if x[0] == 'ç':
+            x = x.replace('ç', 'c')
 
-        inicial = x[0]
+        # Extrai a inicial da palavra
+        inicial = x[0]      
+
         try:
-            assert inicial in dicfreq # TESTE
-        except:
-            print(inicial, x)
-
-        if x in dicfreq[inicial]:
-            dicfreq[inicial][x] += 1 # Aumenta o numero de ocorrencias da palavra em 1
-        else:
-            dicfreq[inicial][x] = 1 # Se a palavra ainda nao apareceu ainda, colocar no dicionario
+            if x in dicfreq[inicial]:
+                dicfreq[inicial][x] += 1
+            else:
+                dicfreq[inicial][x] = 1
+        except KeyError:
+            print("KeyError in word", x)
 
     return dicfreq
 
-# Recebe um dicionario de dicionarios com a frequencia das palavras no texto
-# e retorna uma lista com as 20 palavras mais frequentes na forma (palavra, n_ocorrencias)
-def ordenaFrequencias(dicfreq):
+# ### Geração e ordenação da lista de ocorrências
+# 
+# Agora, é necessário transcrever os pares `(palavra, n_ocorrencias)` do `dicfreq`
+# para uma lista e ordená-la em ordem decrescente (de forma que os 20 primeiros
+# índices correspondem às maiores ocorrências.
+# 
+# Para isso, utilizaremos um algoritmo de ordenação por inserção.
 
-    # Cria uma lista com todas as palavras
-    l_freq = []
+def insertionSort(L):
+    """
+    Funcao de ordenacao por insercao
+    """
+
+    for i in range(1, len(L)):
+        tmp = L[i]
+        j = i
+        while j > 0 and tmp[1] > L[j-1][1]: # Note que acessamos o segundo item da tupla, correspondente ao numero de ocorrencias
+            L[j] = L[j-1]
+            j -= 1
+        L[j] = tmp
+
+def ordenaFrequencias(dicfreq):
+    """
+    Essa funcao recebe um dicionario contendo pares (palavra, numero de ocorrencias), e transforma-o 
+    em uma lista ordenada em ordem decrescente, a qual eh retornada
+    """
+
+    # Copia as entradas do dicionario para a lista de saida
+    lwocorrencias = []
     for inicial in dicfreq:
-        while dicfreq[inicial] != {}:
-            l_freq.append(dicfreq[inicial].popitem())
-    # Ordena a lista em ordem decrescente
-    mergesort(l_freq)
-    # Pega so as 20 palavras com a maior frequencia e retorna
-    lwocorrencias = l_freq[:20]
+        while dicfreq[inicial]:
+            lwocorrencias.append(dicfreq[inicial].popitem())
+
+    # Ordena a lista utilizando o algoritmo de insertion sort
+    insertionSort(lwocorrencias)
+
     return lwocorrencias
 
-# Ordena uma lista em ordem decrescente
-def mergesort(L):
-    tmp = [None]*len(L)
-    def mergesort_rec(esquerda, direita):
-        if (esquerda + 1) < direita:
-            meio = (esquerda + direita)//2
-            mergesort_rec(esquerda, meio)   # Ordena a parte da esquerda
-            mergesort_rec(meio, direita)    # Ordena a parte da direita
-            merge(esquerda, meio, direita)  # Mescla as duas metades
+# ### Geração dos gráficos
+# 
+# Por fim, para analisar o resultado, iremos gerar um gráfico de barras e um gráfico
+# wordcloud, ambos indicando as 20 maiores palavras de maior ocorrência.
 
-    # Mescla duas partes ordenadas de uma lista para formar uma unica ordenada
-    def merge(esquerda, meio, direita):
-        i_esquerda = esquerda   # Iterador da metade da esquerda
-        i_direita = meio        # Iterador da metade da direita
-        i_out = esquerda        # Iterador da lsita de saida (tmp)
-        while i_esquerda < meio and i_direita < direita:
-            if L[i_esquerda][1] > L[i_direita][1]:
-                tmp[i_out] = L[i_esquerda]
-                i_esquerda += 1
-            else:
-                tmp[i_out] = L[i_direita]
-                i_direita += 1
-            i_out += 1
-        while i_esquerda < meio:
-            tmp[i_out] = L[i_esquerda]
-            i_esquerda += 1
-            i_out += 1
-        while i_direita < direita:
-            tmp [i_out] = L[i_direita]
-            i_direita += 1
-            i_out += 1
-        # Coloca a lista temporaria de volta na lista original
-        for i in range(esquerda, direita):
-            L[i] = tmp[i]
-
-    mergesort_rec(0, len(L))
-
-# Faz os graficos necessarios
 def graficos(lwocorrencias, title):
-    freqword = pd.DataFrame.from_records(lwocorrencias, columns=['word', 'count'])
-    freqword.plot(kind='bar', x='word')
-    plt.title(title)
+    """
+    Essa funcao recebe uma lista ordenada em ordem decrescente de tuplas (palavra, numero de ocorrencias)
+    e gera um grafico de barra com as 20 palavras mais frequentes e um wordcloud
+    O parametro 'title' corresponde ao titulo do grafico de barras
+    """
+
+    # Gera grafico de barras
+    freqword = pd.DataFrame.from_records(lwocorrencias[:20],columns=['word','count'])
+    freqword.plot(kind='bar', x='word', title=title)
+
+    # Gera o wordcloud
+    wordc = wd.WordCloud(width=900,height=500, max_words=20, relative_scaling=1,normalize_plurals=False).generate_from_frequencies(dict(lwocorrencias))
+    plt.figure()
+    plt.imshow(wordc, interpolation='bilinear')
+    plt.axis("off")
     plt.show()
 
+# ## Anáise das obras
+# 
+# Uma vez descritas as funções necessárias, podemos realizar a análise das obras.
 
-if __name__ == "__main__":
+# Alice in Wonderland
+words_ns = preProcessa("AliceInWonderland.txt") # O arquivo de texto deve estar no mesmo diretorio do notebook
+dicfreq = geraFrequencias(words_ns)
+lwocorrencias = ordenaFrequencias(dicfreq)
+graficos(lwocorrencias, "Alice in Wonderland")
 
-    #TODO organize into a presentable jupyter notebook
-    dicfreq = geraFrequencias("AliceInWonderland.txt")
-    print(dicfreq['w']['went'])
-    print(dicfreq['w']['would'])
-    lwocorrencias = ordenaFrequencias(dicfreq)
-    graficos(lwocorrencias, "Alice in Wonderland")
+# Through the Looking Glass
+words_ns = preProcessa("ThroughTheLookingGlass.txt") # O arquivo de texto deve estar no mesmo diretorio do notebook
+dicfreq = geraFrequencias(words_ns)
+lwocorrencias = ordenaFrequencias(dicfreq)
+graficos(lwocorrencias, "Through the Looking Glass")
 
-    dicfreq = geraFrequencias("ThroughTheLookingGlass.txt")
-    lwocorrencias = ordenaFrequencias(dicfreq)
-    graficos(lwocorrencias, "Through the Looking Glass")
+# War and Peace
+words_ns = preProcessa("WarAndPeace.txt") # O arquivo de texto deve estar no mesmo diretorio do notebook
+dicfreq = geraFrequencias(words_ns)
+lwocorrencias = ordenaFrequencias(dicfreq)
+graficos(lwocorrencias, "War and Peace")
 
-    dicfreq = geraFrequencias("WarAndPeace.txt")
-    lwocorrencias = ordenaFrequencias(dicfreq)
-    graficos(lwocorrencias, "War and Peace")
+
