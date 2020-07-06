@@ -10,6 +10,31 @@ from FilasAlunos import *
             
 # definir aqui a funcao simulacao
 def simulacao():
+  # Cria todos os clientes e coloca na fila de eventos
+  Dtev1 = fexp(lambdacliente_hour/3600, duracaoexpediente_hour*3600)
+  clienteid, time1 = 0, 0
+  fe = FilaEventos()
+  for i in range(len(Dtev1)):
+    time += Dtev1[i]
+    cliente = Cliente(clienteid, 1, time1)
+    fe.insereFilaEventos((time1, cliente))
+    clienteid += 1
+  
+  while not fe.FilvaEventosVazia():
+    evento = fe.retiraFilaEventos() # objeto do tipo NoFilaEventos
+    t = evento.get_key()
+    cliente = evento.get_cliente()
+    
+    if cliente.get_tipoEvento() == 1:
+      caixa_livre = verificaCaixaLivre(sinalCaixaLivre)
+      if caixa_livre[0]:
+        cliente.set_tipoEvento(2)
+        cliente.set_timeEvento(t, 2)
+        cliente.set_caixaid(caixa_livre[1])
+        fe.insereFilaEventos((t, cliente))
+
+  
+  
 
 
 
@@ -25,15 +50,15 @@ if __name__ == "__main__":
    duracaoexpediente_hour = 2
 
    # Definicao dos caixas 
-   nCaixas=3
-   vetorFilaCaixa=3*[None]
+   nCaixas = 3
+   vetorFilaCaixa = nCaixas*[None]
    for k in range(0,nCaixas):
        vetorFilaCaixa[k]=FilaCaixa()
      
    caixaid = None   # Identifica um determinado caixa e sua fila
 
    # taxa de atendimento de cada caixa por hora
-   vetorTaxaDeAtendimentoCaixa=nCaixas*[None]
+   vetorTaxaDeAtendimentoCaixa = nCaixas*[None]
    vetorTaxaDeAtendimentoCaixa[0] = 15
    vetorTaxaDeAtendimentoCaixa[1] = 15
    vetorTaxaDeAtendimentoCaixa[2] = 15
