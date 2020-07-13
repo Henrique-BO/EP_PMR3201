@@ -58,30 +58,45 @@ class Cliente():
 
     def __str__(self):
         x = "clienteid = " + str(self.__clienteid) + "\n" + \
-             "tipoEvento  = " + str(self.__tipoEvento)  + "\n" + \
+            "tipoEvento  = " + str(self.__tipoEvento)  + "\n" + \
             "timeEvento1 = " + str(self.__timeEvento1) + "\n" + \
             "timeEvento2 = " + str(self.__timeEvento2) + "\n" + \
             "timeEvento3 = " + str(self.__timeEvento3) + "\n" + \
             "Caixa ID = " + str(self.__caixaid) + "\n\n"
         return(x)
 
-# FIFO
 class FilaCaixa:
-
+    """
+    Fila do tipo FIFO correspondendo a fila de clientes a serem atendidos por um
+    caixa especifico. Esta fila possui posicoes ilimitadas.
+    """
     def __init__(self):
-        # TODO: talvez implementar com uma permutacao circular
         self._fila = []
 
     def insereFilaCaixa(self, cliente):
+        """
+        Insere Cliente na fila
+        """
         self._fila.append(cliente)
 
     def retiraFilaCaixa(self):
+        """
+        Retira Cliente na fila.
+        
+        O Cliente a ser retirado sempre e' o que esta na fila ha mais tempo (primeiro da lista)
+        """
         return self._fila.pop(0)
 
     def FilaCaixaEstaVazia(self):
+        """
+        Retorna True se a fila esta vazia, e False caso contrario
+        """
         return len(self._fila) == 0
 
     def tamFila(self):
+        """
+        Retorna o tamanho da fila (numero de Clientes nela)
+        """
         return len(self._fila)
         
 class NoFilaEventos:
@@ -89,12 +104,14 @@ class NoFilaEventos:
     No de Lista Ligada utilizado para a implementacao
     da classe FilaEventos, ordenada por meio da chave 
     de ordenacao 'key'.
+    Para a FilaEventos, essa `key` corresponde ao tempo
+    em que ocorre o evento correspondente.
     """
 
     def __init__(self, x): # x == (key, cliente)
         self._key = x[0]
         self._cliente = x[1]
-        self._prox = None
+        self._prox = None # Proximo no da lista ligada
 
     def get_key(self):
         return self._key
@@ -108,11 +125,25 @@ class NoFilaEventos:
         return self._prox
 
 class FilaEventos:
+    """
+    Fila ordenada por prioridade para os eventos da simulacao,
+    que devera determinar a ordem de ocorrencia destes.
+    Cada evento e um par (tempo, cliente) em que `tempo` e' o
+    instante em que o dado evento ocorrera, `cliente` e' o Cliente
+    associado a esse evento.
+
+    Implementacao como uma Lista Ligada de prioridades, utilizando a
+    classe NoFilaEventos como no.
+    """
 
     def __init__(self):
-        self._primeiro = None
+        self._primeiro = None # Primeiro no da fila (que sera o primeiro a ser retirado)
     
     def insereFilaEventos(self, x):
+        """
+        Insere um novo par (tempo, cliente) na fila, respeitando a ordenacao
+        pelo tempo.
+        """
         novo_no = NoFilaEventos(x)
         # Fila vazia: so adiciona
         if self._primeiro == None:
@@ -131,10 +162,18 @@ class FilaEventos:
             no.set_prox(novo_no)
     
     def retiraFilaEventos(self):
+        """
+        Retira o objeto Cliente do primeiro elemento da fila de eventos,
+        o qual corresponde aquele com o menor tempo de ocorrencia
+        """
         p = self._primeiro
         self._primeiro = self._primeiro.get_prox()
+        return p.get_cliente()
     
     def FilvaEventosVazia(self):
+        """
+        Retorna True se a fila esta vazia, e False caso contrario
+        """
         return self._primeiro == None
 
             
@@ -158,12 +197,24 @@ class ListaClientesSaida():
         return(x)
 
 def verificaCaixaLivre(sinalCaixaLivre):
+    """
+    Determina se existe um caixa livre em que pode ser atendido um Cliente
+    Retorna um par (sinal, caixaid)
+        Se sinal==False, nao ha nenhum caixa livre
+        Se sinal==True, existe pelo menos um caixa livre, e caixaid e' um 
+        deles (aquele com o menor id)
+    """
     for i in range(len(sinalCaixaLivre)):
         if sinalCaixaLivre[i]:
             return (True, i)
     return (False, None)
  
 def achaMenorFila(vetorFilaCaixa):
+    """
+    Dadas todas as FilaCaixas, determina qual caixa possui a menor fila
+    Retorna o caixaid do caixa com a menor fila (indice no vetorFilaCaixa)
+    Se houver mais de um, retorna o id do caixa de menor caixaid que possua a menor fila
+    """
     menor_fila = 0 # indice da menor fila
     for i in range(1, len(vetorFilaCaixa)):
         if vetorFilaCaixa[i].tamFila() < vetorFilaCaixa[menor_fila].tamFila():
@@ -171,9 +222,14 @@ def achaMenorFila(vetorFilaCaixa):
     return menor_fila
 
 def TamanhoDasFilas(vetorFilaCaixa):
+    """
+    Retorna uma lista com o tamanho de cada uma das FilaCaixas,
+    com os indices correspondentes do vetorFilaCaixa
+    """
     vetorTamanhos = [None]*len(vetorFilaCaixa)
     for i in range(len(vetorFilaCaixa)):
         vetorTamanhos[i] = vetorFilaCaixa[i].tamFila()
+    return vetorTamanhos
 
 
 
